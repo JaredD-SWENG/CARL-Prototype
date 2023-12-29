@@ -22,6 +22,7 @@ from pathlib import Path
 import cv2
 from PIL import Image
 import firebase_admin
+from firebase_admin import credentials, firestore
 import threading
 import requests
 
@@ -162,12 +163,48 @@ def check_for_wake_word():
 
 from firebase_admin import credentials, db
 cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\CARL-Prototype\\carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
+# realtime stuff
 default_app = firebase_admin.initialize_app(cred, {
 'databaseURL': 'https://carl-9b3f3-default-rtdb.firebaseio.com/' 
     }) 
-
-
 database_ref = db.reference()
+
+# cloud firestore stuff
+
+dbase = firestore.client()
+
+def add_or_get_instructor(instructor_name):
+    instructor_ref = dbase.collection('Instructor').document(instructor_name)
+    if not instructor_ref.get().exists:
+        # If the instructor doesn't exist, add them to the database
+        instructor_ref.set({})
+    return instructor_ref
+
+def add_or_get_class(instructor_ref, class_name):
+    class_ref = instructor_ref.collection('Class').document(class_name)
+    if not class_ref.get().exists:
+        # If the class doesn't exist, add it to the database
+        class_ref.set({})
+    return class_ref
+
+def add_or_get_lecture(class_ref):
+    date = datetime.utcnow()
+    lecture_ref = class_ref.collection('Lecture').document(date.strftime('%Y-%m-%d %H:%M:%S'))
+    if not lecture_ref.get().exists:
+        # If the lecture doesn't exist, add it to the database
+        lecture_ref.set({
+            'Date': date,
+            'Content': ''  # You can set the content later
+        })
+    return lecture_ref
+
+def update_lecture_content(lecture_ref, transcription):
+    # Update the content of the lecture with the transcription
+    lecture_ref.update({
+        'Content': transcription
+    })
+
+
 
 def main():
     
@@ -184,11 +221,17 @@ def main():
     parser.add_argument("--phrase_timeout", default=3,
                         help="How much empty space between recordings before we "
                              "consider it a new line in the transcription.", type=float)
+    parser.add_argument("--instructor", default="Robert Avanzato", help="Instructor name")
+    parser.add_argument("--class_name", default="CMPEN 270", help="Class name")
     if 'linux' in platform:
         parser.add_argument("--default_microphone", default='pulse',
                             help="Default microphone name for SpeechRecognition. "
                                  "Run this with 'list' to view available Microphones.", type=str)
     args = parser.parse_args()
+
+    # Access the instructor and class name from args
+    instructor_name = args.instructor
+    class_name = args.class_name
 
     # The last time a recording was retrieved from the queue.
     phrase_time = None
@@ -321,9 +364,20 @@ def main():
             break
 
     print("\n\nTranscription:")
+     
     for line in transcription:
         print(line)
     print(output)
+
+    # push to firebase
+    transcription_joined = " ".join(transcription)
+    instructor_ref = add_or_get_instructor(instructor_name)
+    class_ref = add_or_get_class(instructor_ref, class_name)
+    lecture_ref = add_or_get_lecture(class_ref)
+
+    # Update the content of the lecture with the transcription
+    update_lecture_content(lecture_ref, transcription_joined)
+
     
 
 if __name__ == "__main__":

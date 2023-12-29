@@ -16,7 +16,7 @@ from sys import platform
 
 import firebase_admin
 from firebase_admin import credentials, db
-cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\whisper_real_time\\carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
+cred = credentials.Certificate("carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
 default_app = firebase_admin.initialize_app(cred, {
 'databaseURL': 'https://carl-9b3f3-default-rtdb.firebaseio.com/' 
     }) 
