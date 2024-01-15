@@ -1,5 +1,6 @@
 #! python3.7check_for_wake_word()
 import pathlib
+import subprocess
 import textwrap
 import argparse
 import io
@@ -25,7 +26,10 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import threading
 import requests
-
+from openai import OpenAI
+import openai
+import subprocess
+import base64
 # Other imports remain the same
 
 # Global variable to hold the transcribed text
@@ -34,6 +38,9 @@ phrase = ''
 output = ''
 
 import google.generativeai as genai
+
+openai_api_key = "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"
+client = OpenAI(api_key=openai_api_key)
 
 genai.configure(api_key="AIzaSyCi06GaEKyCKqjctTG-bldhQfcmmFBlXKA")
 
@@ -92,15 +99,27 @@ def query(payload):
     return response.json()
      
 def speak(text):
-   engine.say(text)
-   engine.startLoop(False)
-   engine.iterate()
-   engine.endLoop()
+   response = client.audio.speech.create(
+                                model="tts-1",
+                                voice="alloy",
+                                input=text,
+                            )
+   response.stream_to_file("output.mp3")
+   audio_data, sample_rate = sf.read("output.mp3", dtype=np.int16)
+   sd.play(audio_data, sample_rate)
+   sd.wait()
+#    engine.say(text)
+#    engine.startLoop(False)
+#    engine.iterate()
+#    engine.endLoop()
 
 def take_picture():
+    # # For Pi:
+    # command = ['fswebcam', 'current_picture.jpg']
+    # subprocess.run(command, check=True)
+    
     cap = cv2.VideoCapture(0)  # Use the appropriate camera index if you have multiple cameras
-
-   
+  
     _, frame = cap.read()
     cv2.imwrite("current_picture.jpg", frame)
 
@@ -110,6 +129,11 @@ def take_picture():
 
 
     cap.release()
+
+# Function to encode the image
+def encode_image(image_path):
+  with open(image_path, "rb") as image_file:
+    return base64.b64encode(image_file.read()).decode('utf-8')
 
 # Function to check for wake word in the transcription
 def check_for_wake_word():
@@ -130,6 +154,46 @@ def check_for_wake_word():
                             if not (img := Path("current_picture.jpg")).exists():
                                 raise FileNotFoundError(f"Could not find image: {img}")
 
+                            # image_path = Path("current_picture.jpg")
+                            # base64_image = encode_image(image_path)
+                            # headers = {
+                            #     "Content-Type": "application/json",
+                            #     "Authorization": f"Bearer {openai_api_key}"
+                            # }
+
+                            # prompt =  '''You are a helpful teaching assistant named 'Carl' that helps the students better understand the lecture content. 
+                            # Just answer the lastest question (you don't have to answer previous questions as they have already been answered,
+                            # and don't repeat the question in your response). 
+                            # Here is the lecture transcription: '''+ current_transcription +''' And you have also been given an optional image of the classroom whiteboard'''
+
+                            # response = client.chat.completions.create(
+                            #     model = "gpt-4-vision-preview",
+                            #     messages = [
+                            #         {
+                            #         "role": "user",
+                            #         "content": [
+                            #             {
+                            #             "type": "text",
+                            #             "text": prompt
+                            #             },
+                            #             {
+                            #             "type": "image_url",
+                            #             "image_url": {
+                            #                 "url": f"data:image/jpeg;base64,{base64_image}"
+                            #             }
+                            #             }
+                            #         ]
+                            #         }
+                            #     ],
+                            #     max_tokens =  300,
+                            # )
+
+                            
+                            # output = response.choices[0].message.content
+                            # speak(output)
+
+
+
                             image_parts = [
                             {
                                 "mime_type": "image/jpeg",
@@ -147,12 +211,26 @@ def check_for_wake_word():
 
                             output = vmodel.generate_content(prompt_parts).text
                             speak(output)
+                            
+                            
                         else:
                             convo.send_message('''You are a helpful teaching assistant named 'Carl' that helps the students better understand the lecture content. 
                             Just answer the lastest question (you don't have to answer previous questions as they have already been answered,
                             and don't repeat the question in your response). 
                             Here is the lecture transcription: '''+ current_transcription)
                             output = convo.last.text
+
+                            # system_prompt = f"You are a helpful teaching assistant named 'Carl' that helps the students better understand the lecture content. Just answer the latest question (you don't have to answer previous questions as they have already been answered, and don't repeat the question in your response). "
+                            # user_prompt = f"Here is the lecture transcription: {current_transcription}" 
+                            # completion = client.chat.completions.create(
+                            #     model="gpt-3.5-turbo",
+                            #     messages=[
+                            #         {"role": "system", "content": system_prompt},
+                            #         {"role": "user", "content": user_prompt}
+                            #     ]
+                            # )
+                            # output = completion.choices[0].message.content
+                            
                             speak(output)
 
                         print(output)
@@ -164,6 +242,7 @@ def check_for_wake_word():
 from firebase_admin import credentials, db
 cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\CARL-Prototype\\carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
 #cred = credentials.Certificate("/home/raspberry/CARL-Prototype/carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
+
 # realtime stuff
 default_app = firebase_admin.initialize_app(cred, {
 'databaseURL': 'https://carl-9b3f3-default-rtdb.firebaseio.com/' 
@@ -215,15 +294,15 @@ def main():
     
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="medium", help="Model to use",
-                        choices=["tiny", "base", "small", "medium", "large"])
+    # parser.add_argument("--model", default="tiny", help="Model to use",
+    #                     choices=["tiny", "base", "small", "medium", "large"])
     parser.add_argument("--non_english", action='store_true',
                         help="Don't use the english model.")
-    parser.add_argument("--energy_threshold", default=1000,
+    parser.add_argument("--energy_threshold", default=100,
                         help="Energy level for mic to detect.", type=int)
-    parser.add_argument("--record_timeout", default=2,
+    parser.add_argument("--record_timeout", default=3,
                         help="How real time the recording is in seconds.", type=float)
-    parser.add_argument("--phrase_timeout", default=3,
+    parser.add_argument("--phrase_timeout", default=4,
                         help="How much empty space between recordings before we "
                              "consider it a new line in the transcription.", type=float)
     parser.add_argument("--instructor", default="Robert Avanzato", help="Instructor name")
@@ -268,15 +347,16 @@ def main():
         source = sr.Microphone(sample_rate=16000)
 
     # Load / Download model
-    model = args.model
-    if args.model != "large" and not args.non_english:
-        model = model + ".en"
-    audio_model = whisper.load_model(model)
+    # model = args.model
+    # if args.model != "large" and not args.non_english:
+    #     model = model + ".en"
+    # audio_model = whisper.load_model(model)
+    
 
     record_timeout = args.record_timeout
     phrase_timeout = args.phrase_timeout
 
-    temp_file = NamedTemporaryFile().name
+    temp_file = NamedTemporaryFile(suffix=".wav", delete=False).name
     # transcription = ['']
 
     with source:
@@ -307,10 +387,7 @@ def main():
     wake_word_thread.daemon = True  # Optional: makes the thread exit when the main thread exits
     wake_word_thread.start()
 
-    # Start the picture-taking thread
-    # picture_thread = threading.Thread(target=take_picture)
-    # picture_thread.daemon = True
-    # picture_thread.start()
+    
     
     while True:
         try:
@@ -331,17 +408,27 @@ def main():
                     data = data_queue.get()
                     last_sample += data
 
-                # Use AudioData to convert the raw data to wav data.
-                audio_data = sr.AudioData(last_sample, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
-                wav_data = io.BytesIO(audio_data.get_wav_data())
+                # # Use AudioData to convert the raw data to wav data.
+                # audio_data = sr.AudioData(last_sample, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
+                # wav_data = io.BytesIO(audio_data.get_wav_data())
 
-                # Write wav data to the temporary file as bytes.
-                with open(temp_file, 'w+b') as f:
-                    f.write(wav_data.read())
+                # # Write wav data to the temporary file as bytes.
+                # with open(temp_file, 'w+b') as f:
+                #     f.write(wav_data.read())
+
+                # Convert last_sample to a NumPy array
+                audio_array = np.frombuffer(last_sample, dtype=np.int16)
+
+                # Save the raw audio data to a temporary WAV file.
+                sf.write(temp_file, audio_array, source.SAMPLE_RATE)
 
                 # Read the transcription.
-                result = audio_model.transcribe(temp_file, fp16=torch.cuda.is_available())
-                text = result['text'].strip()
+                audio_file = open(temp_file, "rb")
+                text = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="text"
+                )
 
                 # If we detected a pause between recordings, add a new item to our transcription.
                 # Otherwise edit the existing one.
