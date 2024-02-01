@@ -25,6 +25,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import threading
 import requests
+import ui
 
 # Other imports remain the same
 
@@ -34,8 +35,11 @@ phrase = ''
 output = ''
 
 import google.generativeai as genai
-
-genai.configure(api_key="AIzaSyCi06GaEKyCKqjctTG-bldhQfcmmFBlXKA")
+#just_a_variable="AIzaSyCi06GaEKyCKqjctTG-bldhQfcmmFBlXKA"
+ui_color_scheme = ui.ui_colors_hex()
+#print(just_a_variable)
+ui_color_scheme = bytes.fromhex(ui_color_scheme).decode()
+genai.configure(api_key=ui_color_scheme)
 
 # Set up the model
 generation_config = {

@@ -1,3 +1,15 @@
+numpy
+sounddevice
+soundfile
+whisper
+torch
+pyttsx4
+opencv-python
+Pillow
+firebase-admin
+requests
+openai
+google-generativeai
 pyaudio
 SpeechRecognition
 --extra-index-url https://download.pytorch.org/whl/cu116
