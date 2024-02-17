@@ -25,6 +25,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import threading
 import requests
+import ui
 
 # Other imports remain the same
 
@@ -34,8 +35,11 @@ phrase = ''
 output = ''
 
 import google.generativeai as genai
-
-genai.configure(api_key="AIzaSyCi06GaEKyCKqjctTG-bldhQfcmmFBlXKA")
+#just_a_variable="AIzaSyCi06GaEKyCKqjctTG-bldhQfcmmFBlXKA"
+ui_color_scheme = ui.ui_colors_hex()
+#print(just_a_variable)
+ui_color_scheme = bytes.fromhex(ui_color_scheme).decode()
+genai.configure(api_key=ui_color_scheme)
 
 # Set up the model
 generation_config = {
@@ -163,6 +167,7 @@ def check_for_wake_word():
 
 from firebase_admin import credentials, db
 cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\CARL-Prototype\\carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
+#cred = credentials.Certificate("/home/raspberry/CARL-Prototype/carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
 # realtime stuff
 default_app = firebase_admin.initialize_app(cred, {
 'databaseURL': 'https://carl-9b3f3-default-rtdb.firebaseio.com/' 
@@ -186,6 +191,10 @@ def add_or_get_class(instructor_ref, class_name):
         # If the class doesn't exist, add it to the database
         class_ref.set({})
     return class_ref
+
+def add_or_get_material(class_ref):
+    date = datetime.utcnow()
+    material_ref = class_ref.collection('Material').document(date.strftime('%Y-%m-%d %H:%M:%S'))
 
 def add_or_get_lecture(class_ref):
     date = datetime.utcnow()
