@@ -88,7 +88,7 @@ vmodel = genai.GenerativeModel(model_name="gemini-pro-vision",
 
 
 LLM_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
-headers = {"Authorization": "Bearer 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"}
+headers = {"Authorization": "Bearer add_api_key"}
 engine = pyttsx4.init()
 
 def query(payload):
@@ -166,8 +166,8 @@ def check_for_wake_word():
         sleep(1)  # Adjust the sleep time as necessary
 
 from firebase_admin import credentials, db
-cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\CARL-Prototype\\carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
-#cred = credentials.Certificate("/home/raspberry/CARL-Prototype/carl-9b3f3-firebase-adminsdk-9ta75-9b99c0622a.json")
+cred = credentials.Certificate("C:\\Users\\Jared\\Downloads\\CARL-Prototype\\carl-9b3f3-firebase-adminsdk.json")
+#cred = credentials.Certificate("/home/raspberry/CARL-Prototype/carl-9b3f3-firebase-adminsdk.json")
 # realtime stuff
 default_app = firebase_admin.initialize_app(cred, {
 'databaseURL': 'https://carl-9b3f3-default-rtdb.firebaseio.com/' 
