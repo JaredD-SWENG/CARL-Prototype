@@ -1,12 +1,12 @@
 from pyannote.audio import Pipeline
 from pyannote.core import Segment, Annotation, Timeline
 from openai import OpenAI
-openai_api_key = "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"#api_keys['openai_api_key']
+openai_api_key = "add_api_key"#api_keys['openai_api_key']
 
 client = OpenAI(api_key=openai_api_key)
 pipeline = Pipeline.from_pretrained(
   "pyannote/speaker-diarization-3.1",
-  use_auth_token="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")
+  use_auth_token="add_api_key")
 
 audio_file = open("output.mp3", "rb")
 text = client.audio.transcriptions.create(
