@@ -93,7 +93,7 @@ vmodel = genai.GenerativeModel(model_name="gemini-pro-vision",
 
 
 LLM_API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"
-headers = {"Authorization": "Bearer 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"}
+headers = {"Authorization": "Bearer add_api_key"}
 engine = pyttsx4.init()
 
 def query(payload):
