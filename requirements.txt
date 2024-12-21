@@ -1,8 +1,5 @@
 sounddevice
 soundfile
-whisper
-torch
-pyttsx4
 opencv-python
 Pillow
 firebase-admin
@@ -12,7 +9,4 @@ google-generativeai
 stepic
 pyaudio
 SpeechRecognition
-PyQt5
---extra-index-url https://download.pytorch.org/whl/cu116
-torch
-git+https://github.com/openai/whisper.git
+PyQt6
