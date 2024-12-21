@@ -59,7 +59,7 @@ class BackendThread(QThread):
         output = ''
 
         api_keys = ui.extract_api_keys('.\\assets\\logo_carl.png')
-        openai_api_key = "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"#api_keys['openai_api_key']
+        openai_api_key = "add_api_key"#api_keys['openai_api_key']
         genai_api_key = api_keys['genai_api_key']
         client = OpenAI(api_key=openai_api_key)
 
